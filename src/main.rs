@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
 
     let namespace = cli.namespace.unwrap_or("default".to_string());
 
-    println!("{}", format!("Analyzing Kubernetes in namespace '{}'", namespace).bright_white().bold().underline());
+    println!("{}", format!("Analyzing Kubernetes namespace '{}'", namespace).bright_white().bold().underline());
 
     let client = Client::try_default().await?;
 

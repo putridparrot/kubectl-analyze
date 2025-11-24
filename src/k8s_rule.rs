@@ -10,6 +10,17 @@ pub enum Severity {
     Error
 }
 
+#[derive(Debug, Deserialize, Display)]
+pub enum Category {
+    Availability,
+    Configuration,
+    Networking,
+    Security,
+    Resources,
+    Operational
+}
+
+
 #[derive(Debug, Deserialize)]
 pub struct K8sRule {
     pub name: String,
@@ -18,6 +29,6 @@ pub struct K8sRule {
     pub jsonpath: String,
     pub operator: String,
     pub value: Value,
-    pub category: String,
+    pub category: Category,
     pub severity: Severity,
 }
