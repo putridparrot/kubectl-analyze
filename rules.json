@@ -1,0 +1,132 @@
+[
+  {
+    "name": "Minimum Replicas",
+    "description": "Deployments must have at least 2 replicas",
+    "resource": "Deployment",
+    "jsonpath": "$.spec.replicas",
+    "operator": ">=",
+    "value": 2,
+    "category": "Availability",
+    "severity": "Warning"
+  },
+  {
+    "name": "Pod Must Have Labels",
+    "description": "Pods must include at least one label",
+    "resource": "Pod",
+    "jsonpath": "$.metadata.labels",
+    "operator": "!=",
+    "value": null,
+    "category": "Configuration",
+    "severity": "Warning"
+  },
+  {
+    "name": "Service Must Be ClusterIP",
+    "description": "Services must default to ClusterIP type",
+    "resource": "Service",
+    "jsonpath": "$.spec.type",
+    "operator": "==",
+    "value": "ClusterIP",
+    "category": "Networking",
+    "severity": "Warning"
+  },
+  {
+    "name": "Pod Must Not Run As Root",
+    "description": "Pods must run as non-root user",
+    "resource": "Pod",
+    "jsonpath": "$.spec.securityContext.runAsNonRoot",
+    "operator": "==",
+    "value": true,
+    "category": "Security",
+    "severity": "Warning"
+  },
+  {
+    "name": "Image Pull Policy Always",
+    "description": "Containers must always pull latest image",
+    "resource": "Pod",
+    "jsonpath": "$.spec.containers[*].imagePullPolicy",
+    "operator": "==",
+    "value": "Always",
+    "category": "Security",
+    "severity": "Warning"
+  },
+  {
+    "name": "CPU Requests Required",
+    "description": "Containers must define CPU requests",
+    "resource": "Pod",
+    "jsonpath": "$.spec.containers[*].resources.requests.cpu",
+    "operator": "!=",
+    "value": null,
+    "category": "Resources",
+    "severity": "Warning"
+  },
+  {
+    "name": "Memory Limits Required",
+    "description": "Containers must define memory limits",
+    "resource": "Pod",
+    "jsonpath": "$.spec.containers[*].resources.limits.memory",
+    "operator": "!=",
+    "value": null,
+    "category": "Resources",
+    "severity": "Warning"
+  },
+  {
+    "name": "Ingress Must Use TLS",
+    "description": "Ingress resources must define TLS",
+    "resource": "Ingress",
+    "jsonpath": "$.spec.tls",
+    "operator": "!=",
+    "value": null,
+    "category": "Networking",
+    "severity": "Warning"
+  },
+  {
+    "name": "Service Must Have Selector",
+    "description": "Services must target pods via selector",
+    "resource": "Service",
+    "jsonpath": "$.spec.selector",
+    "operator": "!=",
+    "value": null,
+    "category": "Networking",
+    "severity": "Warning"
+  },
+  {
+    "name": "Deployment Strategy Required",
+    "description": "Deployments must define update strategy",
+    "resource": "Deployment",
+    "jsonpath": "$.spec.strategy.type",
+    "operator": "!=",
+    "value": null,
+    "category": "Operational",
+    "severity": "Warning"
+  },
+  {
+    "name": "ConfigMap Must Have Data",
+    "description": "ConfigMaps must contain at least one key-value pair",
+    "resource": "ConfigMap",
+    "jsonpath": "$.data",
+    "operator": "!=",
+    "value": null,
+    "category": "Operational",
+    "severity": "Warning"
+  },
+  {
+    "name": "Service Must Not Use ExternalIPs",
+    "description": "Services must not expose external IPs directly",
+    "resource": "Service",
+    "jsonpath": "$.spec.externalIPs",
+    "operator": "==",
+    "value": null,
+    "category": "Networking",
+    "severity": "Warning"
+  },
+  {
+    "name": "LoadBalancer Must Have Ingress IP",
+    "description": "LoadBalancer services must define ingress IPs",
+    "resource": "Service",
+    "jsonpath": "$.status.loadBalancer.ingress[*].ip",
+    "operator": "!=",
+    "value": null,
+    "category": "Networking",
+    "severity": "Warning"
+  }
+]
