@@ -1,0 +1,82 @@
+name: Release Rust Binary
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger only on version tags like v1.0.0
+  workflow_dispatch:  # Manual trigger fallback
+    inputs:
+      release_tag:
+        description: 'Release tag (e.g., v1.2.3)'
+        required: true
+      notes:
+        description: 'Release notes'
+        required: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: x86_64-pc-windows-gnu
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install cross
+        run: cargo install cross
+
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build with cross
+        continue-on-error: true
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Extract version from Cargo.toml
+        id: cargo_version
+        run: |
+          echo "version=$(grep '^version' Cargo.toml | head -n1 | cut -d '"' -f2)" >> $GITHUB_OUTPUT
+
+      - name: Install git-cliff
+        run: cargo install git-cliff
+
+      - name: Generate changelog
+        run: git-cliff -o CHANGELOG.md
+
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          BIN_NAME=kubectl-analyze
+          TARGET=${{ matrix.target }}
+          BIN_PATH=target/$TARGET/release/$BIN_NAME
+          if [[ "$TARGET" == *"windows"* ]]; then
+            BIN_PATH="${BIN_PATH}.exe"
+            zip -j dist/${BIN_NAME}-${TARGET}.zip $BIN_PATH
+          else
+            tar -czf dist/${BIN_NAME}-${TARGET}.tar.gz -C target/$TARGET/release $BIN_NAME
+          fi
+          sha256sum dist/* > dist/${BIN_NAME}-${TARGET}.sha256
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "kubectl-analyze v${{ steps.cargo_version.outputs.version }}"
+          body_path: CHANGELOG.md
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
