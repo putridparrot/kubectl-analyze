@@ -1,13 +1,13 @@
 [
   {
     "name": "Minimum Replicas",
-    "description": "Deployments must have at least 2 replicas",
+    "description": "Deployments should have at least 2 replicas",
     "resource": "Deployment",
     "jsonpath": "$.spec.replicas",
     "operator": ">=",
     "value": 2,
     "category": "Availability",
-    "severity": "Warning"
+    "severity": "Information"
   },
   {
     "name": "Pod Must Have Labels",
