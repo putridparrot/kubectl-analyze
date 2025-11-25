@@ -74,6 +74,8 @@ async fn main() -> anyhow::Result<()> {
 }
 
 fn run_rules(rules: &[K8sRule], resource_type: Resource, json: &Value, name: &str) {
+    println!("Resource Type: {}", resource_type.to_string().bright_white().bold());
+
     for rule in rules.iter().filter(|r| r.resource.to_string() == resource_type.to_string()) {
         let passed = evaluate_rule(rule, json);
         let output = format!("{} on {} '{}'",
@@ -82,10 +84,12 @@ fn run_rules(rules: &[K8sRule], resource_type: Resource, json: &Value, name: &st
             name);
 
         if passed {
-            println!("{}: {}", colour_severity(&rule.severity), output.bright_green());
+            println!("{}: (Category {}) {}", colour_severity(&rule.severity), rule.category, output.bright_green());
         } else {
-            println!("{}: {}", colour_severity(&rule.severity), output.red());
+            println!("{}: (Category {}) {}", colour_severity(&rule.severity), rule.category, output.red());
         }
+        println!("\t{}", &rule.description);
+        println!("\t{} {} {}", &rule.jsonpath.italic(), &rule.operator.bright_white(), &rule.value.to_string().italic());
     }
 }
 
