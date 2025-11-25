@@ -21,7 +21,11 @@ pub enum Category {
     Operational,
     Reliability,
     Scalability,
-    Performance
+    Performance,
+    Governance,
+    Storage,
+    Scheduling,
+    ResourceGovernance
 }
 
 #[derive(Debug, Deserialize, Display)]
@@ -31,7 +35,14 @@ pub enum Resource {
     Pod,
     Ingress,
     ConfigMap,
-    HorizontalPodAutoscaler
+    HorizontalPodAutoscaler,
+    Secret,
+    ResourceQuota,
+    StatefulSet,
+    DaemonSet,
+    Job,
+    CronJob,
+    LimitRange
 }
 
 
@@ -42,7 +53,7 @@ pub struct K8sRule {
     pub resource: Resource,
     pub jsonpath: String,
     pub operator: String,
-    pub value: Value,
+    pub value: Option<Value>,
     pub category: Category,
     pub severity: Severity,
 }

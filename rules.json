@@ -218,5 +218,251 @@
     "value": [50,80],
     "category": "Performance",
     "severity": "Information"
+  },
+  {
+    "name": "Secret Data Encoding",
+    "description": "Secrets must store data as base64 strings",
+    "resource": "Secret",
+    "jsonpath": "$.data",
+    "operator": "exists",
+    "value": null,
+    "category": "Security",
+    "severity": "Critical"
+  },
+  {
+    "name": "Secret Namespace Check",
+    "description": "Secrets should not be deployed in the default namespace",
+    "resource": "Secret",
+    "jsonpath": "$.metadata.namespace",
+    "operator": "!=",
+    "value": "default",
+    "category": "Governance",
+    "severity": "Warning"
+  },
+  {
+    "name": "Secret Name Hygiene",
+    "description": "Secret names should not directly expose sensitive values",
+    "resource": "Secret",
+    "jsonpath": "$.metadata.name",
+    "operator": "notContains",
+    "value": "password",
+    "category": "Configuration",
+    "severity": "Information"
+  },
+  {
+    "name": "Immutable Secret",
+    "description": "Secrets should be marked immutable to prevent accidental changes",
+    "resource": "Secret",
+    "jsonpath": "$.metadata.annotations.kubectl.kubernetes.io/immutable",
+    "operator": "==",
+    "value": "true",
+    "category": "Security",
+    "severity": "Information"
+  },
+  {
+    "name": "Secret Reference Validity",
+    "description": "Secrets referenced by workloads must exist in the same namespace",
+    "resource": "Pod",
+    "jsonpath": "$.spec.containers[*].env[*].valueFrom.secretKeyRef.name",
+    "operator": "exists",
+    "value": null,
+    "category": "Reliability",
+    "severity": "Critical"
+  },
+  {
+    "name": "CPU Requests Quota",
+    "description": "Namespaces should enforce a quota on total CPU requests",
+    "resource": "ResourceQuota",
+    "jsonpath": "$.spec.hard.cpu",
+    "operator": "exists",
+    "value": null,
+    "category": "Governance",
+    "severity": "Critical"
+  },
+  {
+    "name": "Memory Requests Quota",
+    "description": "Namespaces should enforce a quota on total memory requests",
+    "resource": "ResourceQuota",
+    "jsonpath": "$.spec.hard.memory",
+    "operator": "exists",
+    "value": null,
+    "category": "Governance",
+    "severity": "Critical"
+  },
+  {
+    "name": "Pod Count Quota",
+    "description": "Namespaces should limit the maximum number of Pods",
+    "resource": "ResourceQuota",
+    "jsonpath": "$.spec.hard.pods",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Warning"
+  },
+  {
+    "name": "ConfigMap Count Quota",
+    "description": "Namespaces should limit the number of ConfigMaps",
+    "resource": "ResourceQuota",
+    "jsonpath": "$.spec.hard.configmaps",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Information"
+  },
+  {
+    "name": "Secret Count Quota",
+    "description": "Namespaces should limit the number of Secrets",
+    "resource": "ResourceQuota",
+    "jsonpath": "$.spec.hard.secrets",
+    "operator": "exists",
+    "value": null,
+    "category": "Governance",
+    "severity": "Information"
+  },
+  {
+    "name": "PVC Quota",
+    "description": "Namespaces should limit the number of PersistentVolumeClaims",
+    "resource": "ResourceQuota",
+    "jsonpath": "$.spec.hard.persistentvolumeclaims",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Warning"
+  },
+  {
+    "name": "Storage Requests Quota",
+    "description": "Namespaces should enforce a quota on total storage requests",
+    "resource": "ResourceQuota",
+    "jsonpath": "$.spec.hard.requests.storage",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Critical"
+  },
+  {
+    "name": "StatefulSet Minimum Replicas",
+    "description": "StatefulSets should define at least 2 replicas for high availability",
+    "resource": "StatefulSet",
+    "jsonpath": "$.spec.replicas",
+    "operator": ">=",
+    "value": 2,
+    "category": "Availability",
+    "severity": "Warning"
+  },
+  {
+    "name": "PVC Template Check",
+    "description": "StatefulSets should define volumeClaimTemplates for persistent storage",
+    "resource": "StatefulSet",
+    "jsonpath": "$.spec.volumeClaimTemplates",
+    "operator": "exists",
+    "category": "Storage",
+    "severity": "Critical"
+  },
+  {
+    "name": "StatefulSet Update Strategy",
+    "description": "StatefulSets should use RollingUpdate strategy with partition for safe upgrades",
+    "resource": "StatefulSet",
+    "jsonpath": "$.spec.updateStrategy.type",
+    "operator": "==",
+    "value": "RollingUpdate",
+    "category": "Reliability",
+    "severity": "Information"
+  },
+  {
+    "name": "DaemonSet Node Selector",
+    "description": "DaemonSets should define nodeSelector or tolerations to control placement",
+    "resource": "DaemonSet",
+    "jsonpath": "$.spec.template.spec.nodeSelector",
+    "operator": "exists",
+    "category": "Scheduling",
+    "severity": "Warning"
+  },
+  {
+    "name": "DaemonSet Update Strategy",
+    "description": "DaemonSets should use RollingUpdate strategy for safe upgrades",
+    "resource": "DaemonSet",
+    "jsonpath": "$.spec.updateStrategy.type",
+    "operator": "==",
+    "value": "RollingUpdate",
+    "category": "Reliability",
+    "severity": "Information"
+  },
+  {
+    "name": "Job Completions",
+    "description": "Jobs should define completions to avoid indefinite execution",
+    "resource": "Job",
+    "jsonpath": "$.spec.completions",
+    "operator": "exists",
+    "category": "Reliability",
+    "severity": "Warning"
+  },
+  {
+    "name": "Job Backoff Limit",
+    "description": "Jobs should define backoffLimit to avoid infinite retries",
+    "resource": "Job",
+    "jsonpath": "$.spec.backoffLimit",
+    "operator": "exists",
+    "category": "Reliability",
+    "severity": "Critical"
+  },
+  {
+    "name": "Job Deadline",
+    "description": "Jobs should define activeDeadlineSeconds to prevent runaway execution",
+    "resource": "Job",
+    "jsonpath": "$.spec.activeDeadlineSeconds",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Warning"
+  },
+  {
+    "name": "CronJob Schedule",
+    "description": "CronJobs should define a valid schedule",
+    "resource": "CronJob",
+    "jsonpath": "$.spec.schedule",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "CronJob Concurrency Policy",
+    "description": "CronJobs should define concurrencyPolicy to avoid overlapping executions",
+    "resource": "CronJob",
+    "jsonpath": "$.spec.concurrencyPolicy",
+    "operator": "in",
+    "value": ["Forbid","Replace"],
+    "category": "Reliability",
+    "severity": "Warning"
+  },
+  {
+    "name": "Default CPU Request",
+    "description": "LimitRange should define default CPU requests for containers",
+    "resource": "LimitRange",
+    "jsonpath": "$.spec.limits[*].default.cpu",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Warning"
+  },
+  {
+    "name": "Default Memory Request",
+    "description": "LimitRange should define default memory requests for containers",
+    "resource": "LimitRange",
+    "jsonpath": "$.spec.limits[*].default.memory",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Warning"
+  },
+  {
+    "name": "Max CPU Limit",
+    "description": "LimitRange should define a maximum CPU limit for containers",
+    "resource": "LimitRange",
+    "jsonpath": "$.spec.limits[*].max.cpu",
+    "operator": "exists",
+    "category": "ResourceGovernance",
+    "severity": "Critical"
+  },
+  {
+    "name": "Max Memory Limit",
+    "description": "LimitRange should define a maximum memory limit for containers",
+    "resource": "LimitRange",
+    "jsonpath": "$.spec.limits[*].max.memory",
+    "operator": "exists",
+    "category": "ResourceGovernance",
+    "severity": "Critical"
   }
 ]
