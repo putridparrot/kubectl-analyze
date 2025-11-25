@@ -42,7 +42,19 @@ pub enum Resource {
     DaemonSet,
     Job,
     CronJob,
-    LimitRange
+    LimitRange,
+    VerticalPodAutoscaler,
+    ServiceAccount,
+    NetworkPolicy,
+    PriorityClass,
+    PersistentVolumeClaim,
+    PersistentVolume,
+    IngressClass,
+    PodDisruptionBudget,
+    CustomResourceDefinition,
+    Endpoints,
+    EndpointSlice,
+    Namespace
 }
 
 

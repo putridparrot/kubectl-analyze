@@ -464,5 +464,226 @@
     "operator": "exists",
     "category": "ResourceGovernance",
     "severity": "Critical"
+  },
+  {
+    "name": "VPA Update Mode",
+    "description": "VerticalPodAutoscaler should define updateMode to control how recommendations are applied",
+    "resource": "VerticalPodAutoscaler",
+    "jsonpath": "$.spec.updatePolicy.updateMode",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "VPA Target Reference",
+    "description": "VerticalPodAutoscaler must define a valid targetRef",
+    "resource": "VerticalPodAutoscaler",
+    "jsonpath": "$.spec.targetRef",
+    "operator": "exists",
+    "category": "Reliability",
+    "severity": "Critical"
+  },
+  {
+    "name": "VPA Resource Boundaries",
+    "description": "VerticalPodAutoscaler should define minAllowed and maxAllowed for CPU/memory",
+    "resource": "VerticalPodAutoscaler",
+    "jsonpath": "$.spec.resourcePolicy.containerPolicies[*].minAllowed",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Warning"
+  },
+  {
+    "name": "Explicit ServiceAccount",
+    "description": "Workloads should define a non-default ServiceAccount",
+    "resource": "ServiceAccount",
+    "jsonpath": "$.metadata.name",
+    "operator": "!=",
+    "value": "default",
+    "category": "Security",
+    "severity": "Critical"
+  },
+  {
+    "name": "Disable Automount Token",
+    "description": "ServiceAccounts should disable automountServiceAccountToken unless required",
+    "resource": "ServiceAccount",
+    "jsonpath": "$.automountServiceAccountToken",
+    "operator": "==",
+    "value": "false",
+    "category": "Security",
+    "severity": "Warning"
+  },
+  {
+    "name": "Namespace NetworkPolicy Coverage",
+    "description": "Each namespace should have at least one NetworkPolicy",
+    "resource": "NetworkPolicy",
+    "jsonpath": "$.metadata.namespace",
+    "operator": "exists",
+    "category": "Security",
+    "severity": "Critical"
+  },
+  {
+    "name": "PriorityClass Value",
+    "description": "PriorityClass must define a numeric value",
+    "resource": "PriorityClass",
+    "jsonpath": "$.value",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "Global Default Safety",
+    "description": "PriorityClass with globalDefault=true should not have critical values",
+    "resource": "PriorityClass",
+    "jsonpath": "$.globalDefault",
+    "operator": "==",
+    "value": "false",
+    "category": "Governance",
+    "severity": "Critical"
+  },
+  {
+    "name": "PVC Storage Request",
+    "description": "PersistentVolumeClaim must define a storage request",
+    "resource": "PersistentVolumeClaim",
+    "jsonpath": "$.spec.resources.requests.storage",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "PVC Storage Bounds",
+    "description": "PersistentVolumeClaim storage size must be within approved bounds",
+    "resource": "PersistentVolumeClaim",
+    "jsonpath": "$.spec.resources.requests.storage",
+    "operator": "range",
+    "value": ["1Gi","1Ti"],
+    "category": "Governance",
+    "severity": "Warning"
+  },
+  {
+    "name": "PV Capacity",
+    "description": "PersistentVolume must define a storage capacity",
+    "resource": "PersistentVolume",
+    "jsonpath": "$.spec.capacity.storage",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "PV Capacity Bounds",
+    "description": "PersistentVolume capacity must be within approved bounds",
+    "resource": "PersistentVolume",
+    "jsonpath": "$.spec.capacity.storage",
+    "operator": "range",
+    "value": ["1Gi","10Ti"],
+    "category": "Governance",
+    "severity": "Warning"
+  },
+  {
+    "name": "PV Reclaim Policy",
+    "description": "PersistentVolume must define a reclaim policy",
+    "resource": "PersistentVolume",
+    "jsonpath": "$.spec.persistentVolumeReclaimPolicy",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Critical"
+  },
+  {
+    "name": "IngressClass Controller",
+    "description": "IngressClass must define a controller implementation",
+    "resource": "IngressClass",
+    "jsonpath": "$.spec.controller",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "Default IngressClass Conflict",
+    "description": "Only one IngressClass should be marked as default",
+    "resource": "IngressClass",
+    "jsonpath": "$.metadata.annotations.ingressclass\\.kubernetes\\.io/is-default-class",
+    "operator": "count==1",
+    "category": "Governance",
+    "severity": "Critical"
+  },
+  {
+    "name": "PDB Availability Defined",
+    "description": "PodDisruptionBudget must define minAvailable or maxUnavailable",
+    "resource": "PodDisruptionBudget",
+    "jsonpath": "$.spec.minAvailable",
+    "operator": "exists_or($.spec.maxUnavailable)",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "PDB Selector",
+    "description": "PodDisruptionBudget must define a selector to target pods",
+    "resource": "PodDisruptionBudget",
+    "jsonpath": "$.spec.selector",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "CRD Schema Validation",
+    "description": "CRDs must define an OpenAPI v3 schema for validation",
+    "resource": "CustomResourceDefinition",
+    "jsonpath": "$.spec.versions[*].schema.openAPIV3Schema",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "CRD Version Served/Storage",
+    "description": "CRD versions must define served and storage flags",
+    "resource": "CustomResourceDefinition",
+    "jsonpath": "$.spec.versions[*].served",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Critical"
+  },
+  {
+    "name": "Endpoint Addresses",
+    "description": "Endpoints must define at least one address",
+    "resource": "Endpoints",
+    "jsonpath": "$.subsets[*].addresses",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "Endpoint Ports",
+    "description": "Endpoints must define at least one port",
+    "resource": "Endpoints",
+    "jsonpath": "$.subsets[*].ports",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "EndpointSlice Addresses",
+    "description": "EndpointSlice must define at least one address",
+    "resource": "EndpointSlice",
+    "jsonpath": "$.endpoints[*].addresses",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "EndpointSlice Ports",
+    "description": "EndpointSlice must define at least one port",
+    "resource": "EndpointSlice",
+    "jsonpath": "$.ports[*].port",
+    "operator": "exists",
+    "category": "Configuration",
+    "severity": "Critical"
+  },
+  {
+    "name": "Namespace Ownership Labels",
+    "description": "Namespaces must include owner and environment labels",
+    "resource": "Namespace",
+    "jsonpath": "$.metadata.labels.owner",
+    "operator": "exists",
+    "category": "Governance",
+    "severity": "Critical"
   }
 ]

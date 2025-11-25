@@ -1,7 +1,7 @@
 use clap::Parser;
 use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, StatefulSet};
 use kube::{api::Api, Client};
-use k8s_openapi::api::core::v1::{ConfigMap, LimitRange, Pod, ResourceQuota, Secret, Service};
+use k8s_openapi::api::core::v1::{ConfigMap, Endpoints, LimitRange, Namespace, PersistentVolume, PersistentVolumeClaim, Pod, ResourceQuota, Secret, Service, ServiceAccount};
 use jsonpath_lib::select;
 use serde_json::{to_value, Value};
 use k8s_rule::K8sRule;
@@ -9,7 +9,11 @@ use crate::args::Args;
 use colored::*;
 use k8s_openapi::api::autoscaling::v2::HorizontalPodAutoscaler;
 use k8s_openapi::api::batch::v1::{CronJob, Job};
-use k8s_openapi::api::networking::v1::Ingress;
+use k8s_openapi::api::discovery::v1::EndpointSlice;
+use k8s_openapi::api::networking::v1::{Ingress, IngressClass, NetworkPolicy};
+use k8s_openapi::api::policy::v1::PodDisruptionBudget;
+use k8s_openapi::api::scheduling::v1::PriorityClass;
+use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 use crate::k8s_rule::Resource;
 
 mod k8s_rule;
@@ -89,7 +93,7 @@ async fn main() -> anyhow::Result<()> {
         let json = to_value(&quota)?;
         run_rules(
             &rules,
-            Resource::ResourceQuota, // add a Resource enum variant for quotas
+            Resource::ResourceQuota,
             &json,
             quota.metadata.name.as_deref().unwrap_or(""),
         );
@@ -101,7 +105,7 @@ async fn main() -> anyhow::Result<()> {
         let json = to_value(&sts)?;
         run_rules(
             &rules,
-            Resource::StatefulSet, // add a Resource enum variant for StatefulSet
+            Resource::StatefulSet,
             &json,
             sts.metadata.name.as_deref().unwrap_or(""),
         );
@@ -113,7 +117,7 @@ async fn main() -> anyhow::Result<()> {
         let json = to_value(&ds)?;
         run_rules(
             &rules,
-            Resource::DaemonSet, // add a Resource enum variant for DaemonSet
+            Resource::DaemonSet,
             &json,
             ds.metadata.name.as_deref().unwrap_or(""),
         );
@@ -124,7 +128,7 @@ async fn main() -> anyhow::Result<()> {
         let json = to_value(&job)?;
         run_rules(
             &rules,
-            Resource::Job, // add a Resource enum variant for Job
+            Resource::Job,
             &json,
             job.metadata.name.as_deref().unwrap_or(""),
         );
@@ -135,7 +139,7 @@ async fn main() -> anyhow::Result<()> {
         let json = to_value(&cj)?;
         run_rules(
             &rules,
-            Resource::CronJob, // add a Resource enum variant for CronJob
+            Resource::CronJob,
             &json,
             cj.metadata.name.as_deref().unwrap_or(""),
         );
@@ -147,12 +151,143 @@ async fn main() -> anyhow::Result<()> {
         let json = to_value(&lr)?;
         run_rules(
             &rules,
-            Resource::LimitRange, // add a Resource enum variant for LimitRange
+            Resource::LimitRange,
             &json,
             lr.metadata.name.as_deref().unwrap_or(""),
         );
     }
 
+    // let vpas: Api<VerticalPodAutoscaler> = Api::namespaced(client.clone(), &namespace);
+    // for vpa in vpas.list(&Default::default()).await? {
+    //     let json = to_value(&vpa)?;
+    //     run_rules(
+    //         &rules,
+    //         Resource::VerticalPodAutoscaler,
+    //         &json,
+    //         vpa.metadata.name.as_deref().unwrap_or(""),
+    //     );
+    // }
+
+    let serviceaccounts: Api<ServiceAccount> = Api::namespaced(client.clone(), &namespace);
+    for sa in serviceaccounts.list(&Default::default()).await? {
+        let json = to_value(&sa)?;
+        run_rules(
+            &rules,
+            Resource::ServiceAccount,
+            &json,
+            sa.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
+
+    let networkpolicies: Api<NetworkPolicy> = Api::namespaced(client.clone(), &namespace);
+    for np in networkpolicies.list(&Default::default()).await? {
+        let json = to_value(&np)?;
+        run_rules(
+            &rules,
+            Resource::NetworkPolicy,
+            &json,
+            np.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
+
+    let priorityclasses: Api<PriorityClass> = Api::all(client.clone());
+    for pc in priorityclasses.list(&Default::default()).await? {
+        let json = to_value(&pc)?;
+        run_rules(
+            &rules,
+            Resource::PriorityClass,
+            &json,
+            pc.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
+
+    let pvcs: Api<PersistentVolumeClaim> = Api::namespaced(client.clone(), &namespace);
+    for pvc in pvcs.list(&Default::default()).await? {
+        let json = to_value(&pvc)?;
+        run_rules(
+            &rules,
+            Resource::PersistentVolumeClaim,
+            &json,
+            pvc.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
+
+    let persistentvolumes: Api<PersistentVolume> = Api::all(client.clone());
+    for pv in persistentvolumes.list(&Default::default()).await? {
+        let json = to_value(&pv)?;
+        run_rules(
+            &rules,
+            Resource::PersistentVolume,
+            &json,
+            pv.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
+
+    let ingressclasses: Api<IngressClass> = Api::all(client.clone());
+    for ic in ingressclasses.list(&Default::default()).await? {
+        let json = to_value(&ic)?;
+        run_rules(
+            &rules,
+            Resource::IngressClass,
+            &json,
+            ic.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
+
+    let pdbs: Api<PodDisruptionBudget> = Api::namespaced(client.clone(), &namespace);
+    for pdb in pdbs.list(&Default::default()).await? {
+        let json = to_value(&pdb)?;
+        run_rules(
+            &rules,
+            Resource::PodDisruptionBudget,
+            &json,
+            pdb.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
+
+    let crds: Api<CustomResourceDefinition> = Api::all(client.clone());
+    for crd in crds.list(&Default::default()).await? {
+        let json = to_value(&crd)?;
+        run_rules(
+            &rules,
+            Resource::CustomResourceDefinition,
+            &json,
+            crd.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
+
+    let endpoints: Api<Endpoints> = Api::namespaced(client.clone(), &namespace);
+    for ep in endpoints.list(&Default::default()).await? {
+        let json = to_value(&ep)?;
+        run_rules(
+            &rules,
+            Resource::Endpoints,
+            &json,
+            ep.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
+
+    let endpointslices: Api<EndpointSlice> = Api::namespaced(client.clone(), &namespace);
+    for es in endpointslices.list(&Default::default()).await? {
+        let json = to_value(&es)?;
+        run_rules(
+            &rules,
+            Resource::EndpointSlice, // add a Resource enum variant for EndpointSlice
+            &json,
+            es.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
+
+    let namespaces: Api<Namespace> = Api::all(client.clone());
+    for ns in namespaces.list(&Default::default()).await? {
+        let json = to_value(&ns)?;
+        run_rules(
+            &rules,
+            Resource::Namespace, // add a Resource enum variant for Namespace
+            &json,
+            ns.metadata.name.as_deref().unwrap_or(""),
+        );
+    }
 
     Ok(())
 }
@@ -176,7 +311,7 @@ fn run_rules(rules: &[K8sRule], resource_type: Resource, json: &Value, name: &st
         println!("\t{} {} {}", &rule.jsonpath.italic(), &rule.operator.bright_white(),
                  &rule.value
                      .as_ref()
-                     .map_or("<none>".to_string(), |v| v.to_string())
+                     .map_or("".to_string(), |v| v.to_string())
                      .italic());
         }
 }
