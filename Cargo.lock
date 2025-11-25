@@ -3,22 +3,6 @@
 version = 4
 
 [[package]]
-name = "RustRulesEngine"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "colored",
- "jsonpath_lib",
- "k8s-openapi",
- "kube",
- "serde",
- "serde_json",
- "strum_macros",
- "tokio",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -634,6 +618,22 @@ dependencies = [
  "serde-value",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "kubectl-analyze"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "colored",
+ "jsonpath_lib",
+ "k8s-openapi",
+ "kube",
+ "serde",
+ "serde_json",
+ "strum_macros",
+ "tokio",
 ]
 
 [[package]]
