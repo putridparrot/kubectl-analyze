@@ -128,5 +128,95 @@
     "value": null,
     "category": "Networking",
     "severity": "Warning"
+  },
+  {
+    "name": "Minimum Replicas",
+    "description": "Deployments should have at least 2 replicas",
+    "resource": "Deployment",
+    "jsonpath": "$.spec.replicas",
+    "operator": ">=",
+    "value": 2,
+    "category": "Availability",
+    "severity": "Information"
+  },
+  {
+    "name": "Privileged Container Check",
+    "description": "Containers should not run in privileged mode",
+    "resource": "Pod",
+    "jsonpath": "$.spec.containers[*].securityContext.privileged",
+    "operator": "!=",
+    "value": true,
+    "category": "Security",
+    "severity": "Critical"
+  },
+  {
+    "name": "Image Tag Check",
+    "description": "Images should not use the 'latest' tag",
+    "resource": "Pod",
+    "jsonpath": "$.spec.containers[*].image",
+    "operator": "notContains",
+    "value": ":latest",
+    "category": "Configuration",
+    "severity": "Warning"
+  },
+  {
+    "name": "RollingUpdate Strategy",
+    "description": "Deployments should use RollingUpdate strategy with maxUnavailable < 50%",
+    "resource": "Deployment",
+    "jsonpath": "$.spec.strategy.type",
+    "operator": "==",
+    "value": "RollingUpdate",
+    "category": "Reliability",
+    "severity": "Warning"
+  },
+  {
+    "name": "HPA Presence",
+    "description": "Scalable workloads should define a HorizontalPodAutoscaler",
+    "resource": "HorizontalPodAutoscaler",
+    "jsonpath": "$.spec.scaleTargetRef.kind",
+    "operator": "exists",
+    "value": null,
+    "category": "Scalability",
+    "severity": "Warning"
+  },
+  {
+    "name": "HPA Minimum Replicas",
+    "description": "HPA should define minReplicas >= 2",
+    "resource": "HorizontalPodAutoscaler",
+    "jsonpath": "$.spec.minReplicas",
+    "operator": ">=",
+    "value": 2,
+    "category": "Availability",
+    "severity": "Information"
+  },
+  {
+    "name": "HPA Max Replicas",
+    "description": "HPA should define a maxReplicas value",
+    "resource": "HorizontalPodAutoscaler",
+    "jsonpath": "$.spec.maxReplicas",
+    "operator": "exists",
+    "value": null,
+    "category": "Scalability",
+    "severity": "Critical"
+  },
+  {
+    "name": "HPA Metrics Defined",
+    "description": "HPA should define CPU or memory utilization metrics",
+    "resource": "HorizontalPodAutoscaler",
+    "jsonpath": "$.spec.metrics[*].resource.name",
+    "operator": "in",
+    "value": ["cpu","memory"],
+    "category": "Performance",
+    "severity": "Warning"
+  },
+  {
+    "name": "HPA Target Utilization",
+    "description": "CPU utilization target should be between 50 and 80 percent",
+    "resource": "HorizontalPodAutoscaler",
+    "jsonpath": "$.spec.metrics[*].resource.target.averageUtilization",
+    "operator": "between",
+    "value": [50,80],
+    "category": "Performance",
+    "severity": "Information"
   }
 ]

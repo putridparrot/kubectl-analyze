@@ -7,7 +7,8 @@ use strum_macros::{Display};
 pub enum Severity {
     Information,
     Warning,
-    Error
+    Error,
+    Critical
 }
 
 #[derive(Debug, Deserialize, Display)]
@@ -17,7 +18,20 @@ pub enum Category {
     Networking,
     Security,
     Resources,
-    Operational
+    Operational,
+    Reliability,
+    Scalability,
+    Performance
+}
+
+#[derive(Debug, Deserialize, Display)]
+pub enum Resource {
+    Service,
+    Deployment,
+    Pod,
+    Ingress,
+    ConfigMap,
+    HorizontalPodAutoscaler
 }
 
 
@@ -25,7 +39,7 @@ pub enum Category {
 pub struct K8sRule {
     pub name: String,
     pub description: String,
-    pub resource: String,
+    pub resource: Resource,
     pub jsonpath: String,
     pub operator: String,
     pub value: Value,
