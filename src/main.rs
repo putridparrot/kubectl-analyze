@@ -272,7 +272,7 @@ async fn main() -> anyhow::Result<()> {
         let json = to_value(&es)?;
         run_rules(
             &rules,
-            Resource::EndpointSlice, // add a Resource enum variant for EndpointSlice
+            Resource::EndpointSlice,
             &json,
             es.metadata.name.as_deref().unwrap_or(""),
         );
@@ -283,7 +283,7 @@ async fn main() -> anyhow::Result<()> {
         let json = to_value(&ns)?;
         run_rules(
             &rules,
-            Resource::Namespace, // add a Resource enum variant for Namespace
+            Resource::Namespace,
             &json,
             ns.metadata.name.as_deref().unwrap_or(""),
         );
@@ -311,7 +311,7 @@ fn run_rules(rules: &[K8sRule], resource_type: Resource, json: &Value, name: &st
         println!("\t{} {} {}", &rule.jsonpath.italic(), &rule.operator.bright_white(),
                  &rule.value
                      .as_ref()
-                     .map_or("".to_string(), |v| v.to_string())
+                     .map_or("null".to_string(), |v| v.to_string())
                      .italic());
         }
 }
