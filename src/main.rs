@@ -123,6 +123,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // Job
     let jobs: Api<Job> = Api::namespaced(client.clone(), &namespace);
     for job in jobs.list(&Default::default()).await? {
         let json = to_value(&job)?;
@@ -134,6 +135,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // CronJob
     let cronjobs: Api<CronJob> = Api::namespaced(client.clone(), &namespace);
     for cj in cronjobs.list(&Default::default()).await? {
         let json = to_value(&cj)?;
@@ -168,6 +170,7 @@ async fn main() -> anyhow::Result<()> {
     //     );
     // }
 
+    // ServiceAccount
     let serviceaccounts: Api<ServiceAccount> = Api::namespaced(client.clone(), &namespace);
     for sa in serviceaccounts.list(&Default::default()).await? {
         let json = to_value(&sa)?;
@@ -179,6 +182,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // NetworkPolicy
     let networkpolicies: Api<NetworkPolicy> = Api::namespaced(client.clone(), &namespace);
     for np in networkpolicies.list(&Default::default()).await? {
         let json = to_value(&np)?;
@@ -190,6 +194,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // PriorityClass
     let priorityclasses: Api<PriorityClass> = Api::all(client.clone());
     for pc in priorityclasses.list(&Default::default()).await? {
         let json = to_value(&pc)?;
@@ -201,6 +206,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // PersistentVolumeClaim
     let pvcs: Api<PersistentVolumeClaim> = Api::namespaced(client.clone(), &namespace);
     for pvc in pvcs.list(&Default::default()).await? {
         let json = to_value(&pvc)?;
@@ -212,6 +218,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // PersistentVolume
     let persistentvolumes: Api<PersistentVolume> = Api::all(client.clone());
     for pv in persistentvolumes.list(&Default::default()).await? {
         let json = to_value(&pv)?;
@@ -223,6 +230,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // IngressClass
     let ingressclasses: Api<IngressClass> = Api::all(client.clone());
     for ic in ingressclasses.list(&Default::default()).await? {
         let json = to_value(&ic)?;
@@ -234,6 +242,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // PodDisruptionBudget
     let pdbs: Api<PodDisruptionBudget> = Api::namespaced(client.clone(), &namespace);
     for pdb in pdbs.list(&Default::default()).await? {
         let json = to_value(&pdb)?;
@@ -245,6 +254,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // CustomResourceDefinition
     let crds: Api<CustomResourceDefinition> = Api::all(client.clone());
     for crd in crds.list(&Default::default()).await? {
         let json = to_value(&crd)?;
@@ -256,6 +266,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // Endpoints
     let endpoints: Api<Endpoints> = Api::namespaced(client.clone(), &namespace);
     for ep in endpoints.list(&Default::default()).await? {
         let json = to_value(&ep)?;
@@ -267,6 +278,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // EndpointSlice
     let endpointslices: Api<EndpointSlice> = Api::namespaced(client.clone(), &namespace);
     for es in endpointslices.list(&Default::default()).await? {
         let json = to_value(&es)?;
@@ -278,6 +290,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    // Namespace
     let namespaces: Api<Namespace> = Api::all(client.clone());
     for ns in namespaces.list(&Default::default()).await? {
         let json = to_value(&ns)?;
@@ -311,7 +324,7 @@ fn run_rules(rules: &[K8sRule], resource_type: Resource, json: &Value, name: &st
         println!("\t{} {} {}", &rule.jsonpath.italic(), &rule.operator.bright_white(),
                  &rule.value
                      .as_ref()
-                     .map_or("null".to_string(), |v| v.to_string())
+                     .map_or("null".to_string(), |v| v.to_string()) // need to handle when value is meant to be null
                      .italic());
         }
 }
