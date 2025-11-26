@@ -1,9 +1,9 @@
-﻿use serde::Deserialize;
+﻿use clap::ValueEnum;
+use serde::Deserialize;
 use serde_json::Value;
 use strum_macros::{Display};
 
-
-#[derive(Debug, Deserialize, Display)]
+#[derive(Debug, Deserialize, Display, PartialEq, Eq, ValueEnum, Clone)]
 pub enum Severity {
     Information,
     Warning,
@@ -11,7 +11,19 @@ pub enum Severity {
     Critical
 }
 
-#[derive(Debug, Deserialize, Display)]
+impl Severity {
+    pub fn included_levels(self) -> Vec<Severity> {
+        use Severity::*;
+        match self {
+            Information => vec![Information, Warning, Error, Critical],
+            Warning     => vec![Warning, Error, Critical],
+            Error       => vec![Error, Critical],
+            Critical    => vec![Critical],
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Display, PartialEq, Eq, ValueEnum, Clone)]
 pub enum Category {
     Availability,
     Configuration,
@@ -28,7 +40,7 @@ pub enum Category {
     ResourceGovernance
 }
 
-#[derive(Debug, Deserialize, Display)]
+#[derive(Debug, Deserialize, Display, PartialEq, Eq, ValueEnum, Clone)]
 pub enum Resource {
     Service,
     Deployment,

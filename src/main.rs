@@ -1,6 +1,7 @@
+use std::ops::Deref;
 use clap::Parser;
 use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, StatefulSet};
-use kube::{api::Api, Client};
+use kube::{api::Api, Client, ResourceExt};
 use k8s_openapi::api::core::v1::{ConfigMap, Endpoints, LimitRange, Namespace, PersistentVolume, PersistentVolumeClaim, Pod, ResourceQuota, Secret, Service, ServiceAccount};
 use jsonpath_lib::select;
 use serde_json::{to_value, Value};
@@ -14,7 +15,9 @@ use k8s_openapi::api::networking::v1::{Ingress, IngressClass, NetworkPolicy};
 use k8s_openapi::api::policy::v1::PodDisruptionBudget;
 use k8s_openapi::api::scheduling::v1::PriorityClass;
 use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
-use crate::k8s_rule::Resource;
+use serde::Serialize;
+use crate::k8s_rule::{Category, Resource, Severity};
+
 
 mod k8s_rule;
 mod args;
@@ -29,304 +32,145 @@ async fn main() -> anyhow::Result<()> {
 
     let namespace = cli.namespace.unwrap_or("default".to_string());
 
+    let levels = cli.level
+        .map(|level| level.included_levels())
+        .unwrap_or_else(|| Vec::new());
+
+    let category = cli.category;
+    let resource = cli.resource;
+
     println!("{}", format!("Analyzing Kubernetes namespace '{}'", namespace).bright_white().bold().underline());
 
     let client = Client::try_default().await?;
 
     // Deployments
-    let deployments: Api<Deployment> = Api::namespaced(client.clone(), &namespace);
-    for d in deployments.list(&Default::default()).await? {
-        let json = to_value(&d)?;
-        run_rules(&rules, Resource::Deployment, &json, d.metadata.name.as_deref().unwrap_or(""));
-    }
+    process_resources(Api::<Deployment>::all(client.clone()), &rules, &Resource::Deployment, &levels, &category, &resource).await?;
 
     // Pods
-    let pods: Api<Pod> = Api::namespaced(client.clone(), &namespace);
-    for p in pods.list(&Default::default()).await? {
-        let json = to_value(&p)?;
-        run_rules(&rules, Resource::Pod, &json, p.metadata.name.as_deref().unwrap_or(""));
-    }
+    process_resources(Api::<Pod>::all(client.clone()), &rules, &Resource::Pod, &levels, &category, &resource).await?;
 
     // Services
-    let services: Api<Service> = Api::namespaced(client.clone(), &namespace);
-    for s in services.list(&Default::default()).await? {
-        let json = to_value(&s)?;
-        run_rules(&rules, Resource::Service, &json, s.metadata.name.as_deref().unwrap_or(""));
-    }
+    process_resources(Api::<Service>::all(client.clone()), &rules, &Resource::Service, &levels, &category, &resource).await?;
 
     // Ingress
-    let ingresses: Api<Ingress> = Api::namespaced(client.clone(), &namespace);
-    for ing in ingresses.list(&Default::default()).await? {
-        let json = to_value(&ing)?;
-        run_rules(&rules, Resource::Ingress, &json, ing.metadata.name.as_deref().unwrap_or(""));
-    }
+    process_resources(Api::<Ingress>::all(client.clone()), &rules, &Resource::Ingress, &levels, &category, &resource).await?;
 
     // ConfigMap
-    let configmaps: Api<ConfigMap> = Api::namespaced(client.clone(), &namespace);
-    for cm in configmaps.list(&Default::default()).await? {
-        let json = to_value(&cm)?;
-        run_rules(&rules, Resource::ConfigMap, &json, cm.metadata.name.as_deref().unwrap_or(""));
-    }
+    process_resources(Api::<ConfigMap>::all(client.clone()), &rules, &Resource::ConfigMap, &levels, &category, &resource).await?;
 
     // HorizontalPodAutoscaler
-    let hpas: Api<HorizontalPodAutoscaler> = Api::namespaced(client.clone(), &namespace);
-    for hpa in hpas.list(&Default::default()).await? {
-        let json = to_value(&hpa)?;
-        run_rules(&rules, Resource::HorizontalPodAutoscaler, &json, hpa.metadata.name.as_deref().unwrap_or(""));
-    }
+    process_resources(Api::<HorizontalPodAutoscaler>::all(client.clone()), &rules, &Resource::HorizontalPodAutoscaler, &levels, &category, &resource).await?;
 
     // Secret
-    let secrets: Api<Secret> = Api::namespaced(client.clone(), &namespace);
-    for secret in secrets.list(&Default::default()).await? {
-        let json = to_value(&secret)?;
-        run_rules(
-            &rules,
-            Resource::Secret, // assuming you have a Resource enum variant for Secret
-            &json,
-            secret.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<Secret>::all(client.clone()), &rules, &Resource::Secret, &levels, &category, &resource).await?;
 
     // ResourceQuota
-    let quotas: Api<ResourceQuota> = Api::namespaced(client.clone(), &namespace);
-    for quota in quotas.list(&Default::default()).await? {
-        let json = to_value(&quota)?;
-        run_rules(
-            &rules,
-            Resource::ResourceQuota,
-            &json,
-            quota.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<ResourceQuota>::all(client.clone()), &rules, &Resource::ResourceQuota, &levels, &category, &resource).await?;
 
     // StatefulSet
-    let statefulsets: Api<StatefulSet> = Api::namespaced(client.clone(), &namespace);
-    for sts in statefulsets.list(&Default::default()).await? {
-        let json = to_value(&sts)?;
-        run_rules(
-            &rules,
-            Resource::StatefulSet,
-            &json,
-            sts.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<StatefulSet>::all(client.clone()), &rules, &Resource::StatefulSet, &levels, &category, &resource).await?;
 
     // DaemonSet
-    let daemonsets: Api<DaemonSet> = Api::namespaced(client.clone(), &namespace);
-    for ds in daemonsets.list(&Default::default()).await? {
-        let json = to_value(&ds)?;
-        run_rules(
-            &rules,
-            Resource::DaemonSet,
-            &json,
-            ds.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<DaemonSet>::all(client.clone()), &rules, &Resource::DaemonSet, &levels, &category, &resource).await?;
 
     // Job
-    let jobs: Api<Job> = Api::namespaced(client.clone(), &namespace);
-    for job in jobs.list(&Default::default()).await? {
-        let json = to_value(&job)?;
-        run_rules(
-            &rules,
-            Resource::Job,
-            &json,
-            job.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<Job>::all(client.clone()), &rules, &Resource::Job, &levels, &category, &resource).await?;
 
     // CronJob
-    let cronjobs: Api<CronJob> = Api::namespaced(client.clone(), &namespace);
-    for cj in cronjobs.list(&Default::default()).await? {
-        let json = to_value(&cj)?;
-        run_rules(
-            &rules,
-            Resource::CronJob,
-            &json,
-            cj.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<CronJob>::all(client.clone()), &rules, &Resource::CronJob, &levels, &category, &resource).await?;
 
     // LimitRange
-    let limitranges: Api<LimitRange> = Api::namespaced(client.clone(), &namespace);
-    for lr in limitranges.list(&Default::default()).await? {
-        let json = to_value(&lr)?;
-        run_rules(
-            &rules,
-            Resource::LimitRange,
-            &json,
-            lr.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<LimitRange>::all(client.clone()), &rules, &Resource::LimitRange, &levels, &category, &resource).await?;
 
-    // let vpas: Api<VerticalPodAutoscaler> = Api::namespaced(client.clone(), &namespace);
-    // for vpa in vpas.list(&Default::default()).await? {
-    //     let json = to_value(&vpa)?;
-    //     run_rules(
-    //         &rules,
-    //         Resource::VerticalPodAutoscaler,
-    //         &json,
-    //         vpa.metadata.name.as_deref().unwrap_or(""),
-    //     );
-    // }
+    // VerticalPodAutoscaler
+    //process_resources(Api::<VerticalPodAutoscaler>::all(client.clone()), &rules, &Resource::VerticalPodAutoscaler, &levels, &category, &resource).await?;
 
     // ServiceAccount
-    let serviceaccounts: Api<ServiceAccount> = Api::namespaced(client.clone(), &namespace);
-    for sa in serviceaccounts.list(&Default::default()).await? {
-        let json = to_value(&sa)?;
-        run_rules(
-            &rules,
-            Resource::ServiceAccount,
-            &json,
-            sa.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<ServiceAccount>::all(client.clone()), &rules, &Resource::ServiceAccount, &levels, &category, &resource).await?;
 
     // NetworkPolicy
-    let networkpolicies: Api<NetworkPolicy> = Api::namespaced(client.clone(), &namespace);
-    for np in networkpolicies.list(&Default::default()).await? {
-        let json = to_value(&np)?;
-        run_rules(
-            &rules,
-            Resource::NetworkPolicy,
-            &json,
-            np.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<NetworkPolicy>::all(client.clone()), &rules, &Resource::NetworkPolicy, &levels, &category, &resource).await?;
 
     // PriorityClass
-    let priorityclasses: Api<PriorityClass> = Api::all(client.clone());
-    for pc in priorityclasses.list(&Default::default()).await? {
-        let json = to_value(&pc)?;
-        run_rules(
-            &rules,
-            Resource::PriorityClass,
-            &json,
-            pc.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<PriorityClass>::all(client.clone()), &rules, &Resource::PriorityClass, &levels, &category, &resource).await?;
 
     // PersistentVolumeClaim
-    let pvcs: Api<PersistentVolumeClaim> = Api::namespaced(client.clone(), &namespace);
-    for pvc in pvcs.list(&Default::default()).await? {
-        let json = to_value(&pvc)?;
-        run_rules(
-            &rules,
-            Resource::PersistentVolumeClaim,
-            &json,
-            pvc.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<PersistentVolumeClaim>::all(client.clone()), &rules, &Resource::PersistentVolumeClaim, &levels, &category, &resource).await?;
 
     // PersistentVolume
-    let persistentvolumes: Api<PersistentVolume> = Api::all(client.clone());
-    for pv in persistentvolumes.list(&Default::default()).await? {
-        let json = to_value(&pv)?;
-        run_rules(
-            &rules,
-            Resource::PersistentVolume,
-            &json,
-            pv.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<PersistentVolume>::all(client.clone()), &rules, &Resource::PersistentVolume, &levels, &category, &resource).await?;
 
     // IngressClass
-    let ingressclasses: Api<IngressClass> = Api::all(client.clone());
-    for ic in ingressclasses.list(&Default::default()).await? {
-        let json = to_value(&ic)?;
-        run_rules(
-            &rules,
-            Resource::IngressClass,
-            &json,
-            ic.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<IngressClass>::all(client.clone()), &rules, &Resource::IngressClass, &levels, &category, &resource).await?;
 
     // PodDisruptionBudget
-    let pdbs: Api<PodDisruptionBudget> = Api::namespaced(client.clone(), &namespace);
-    for pdb in pdbs.list(&Default::default()).await? {
-        let json = to_value(&pdb)?;
-        run_rules(
-            &rules,
-            Resource::PodDisruptionBudget,
-            &json,
-            pdb.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<PodDisruptionBudget>::all(client.clone()), &rules, &Resource::PodDisruptionBudget, &levels, &category, &resource).await?;
 
     // CustomResourceDefinition
-    let crds: Api<CustomResourceDefinition> = Api::all(client.clone());
-    for crd in crds.list(&Default::default()).await? {
-        let json = to_value(&crd)?;
-        run_rules(
-            &rules,
-            Resource::CustomResourceDefinition,
-            &json,
-            crd.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<CustomResourceDefinition>::all(client.clone()), &rules, &Resource::CustomResourceDefinition, &levels, &category, &resource).await?;
 
     // Endpoints
-    let endpoints: Api<Endpoints> = Api::namespaced(client.clone(), &namespace);
-    for ep in endpoints.list(&Default::default()).await? {
-        let json = to_value(&ep)?;
-        run_rules(
-            &rules,
-            Resource::Endpoints,
-            &json,
-            ep.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<Endpoints>::all(client.clone()), &rules, &Resource::Endpoints, &levels, &category, &resource).await?;
 
     // EndpointSlice
-    let endpointslices: Api<EndpointSlice> = Api::namespaced(client.clone(), &namespace);
-    for es in endpointslices.list(&Default::default()).await? {
-        let json = to_value(&es)?;
-        run_rules(
-            &rules,
-            Resource::EndpointSlice,
-            &json,
-            es.metadata.name.as_deref().unwrap_or(""),
-        );
-    }
+    process_resources(Api::<EndpointSlice>::all(client.clone()), &rules, &Resource::EndpointSlice, &levels, &category, &resource).await?;
 
     // Namespace
-    let namespaces: Api<Namespace> = Api::all(client.clone());
-    for ns in namespaces.list(&Default::default()).await? {
-        let json = to_value(&ns)?;
-        run_rules(
-            &rules,
-            Resource::Namespace,
-            &json,
-            ns.metadata.name.as_deref().unwrap_or(""),
-        );
+    process_resources(Api::<Namespace>::all(client.clone()), &rules, &Resource::Namespace, &levels, &category, &resource).await?;
+
+    Ok(())
+}
+
+async fn process_resources<K>(api: Api<K>, rules: &Vec<K8sRule>, resource: &Resource, 
+                              levels: &Vec<Severity>, select_category: &Option<Category>,
+                              select_resource: &Option<Resource>) -> anyhow::Result<()>
+where
+    K: kube::Resource + serde::de::DeserializeOwned + Clone + std::fmt::Debug + Serialize + Send + Sync + 'static,
+{
+    if select_resource.as_ref().map_or(true, |r| r == resource) {
+        for item in api.list(&Default::default()).await? {
+            let json = to_value(&item)?;
+            run_rules(
+                &rules,
+                resource,
+                &json,
+                item.name_any().as_str(),
+                &levels,
+                select_category
+            );
+        }
     }
 
     Ok(())
 }
 
-fn run_rules(rules: &[K8sRule], resource_type: Resource, json: &Value, name: &str) {
+fn run_rules(rules: &[K8sRule], resource_type: &Resource, json: &Value, name: &str, levels: &Vec<Severity>,
+             select_category: &Option<Category>) {
     println!("Resource Type: {}", resource_type.to_string().bright_white().bold());
 
     for rule in rules.iter().filter(|r| r.resource.to_string() == resource_type.to_string()) {
-        let passed = evaluate_rule(rule, json);
-        let output = format!("{} on {} '{}'",
-            rule.name,
-            resource_type,
-            name);
+        if select_category.as_ref().map_or(true, |c| c == &rule.category) {
+            if levels.is_empty() || levels.contains(&rule.severity) {
+                let passed = evaluate_rule(rule, json);
+                let output = format!("{} on {} '{}'",
+                                     rule.name,
+                                     resource_type,
+                                     name);
 
-        if passed {
-            println!("{}: (Category {}) {}", colour_severity(&rule.severity), rule.category, output.bright_green());
-        } else {
-            println!("{}: (Category {}) {}", colour_severity(&rule.severity), rule.category, output.red());
+                if passed {
+                    println!("{}: (Category {}) {}", colour_severity(&rule.severity), rule.category, output.bright_green());
+                } else {
+                    println!("{}: (Category {}) {}", colour_severity(&rule.severity), rule.category, output.red());
+                }
+                println!("\t{}", &rule.description);
+                println!("\t{} {} {}", &rule.jsonpath.italic(), &rule.operator.bright_white(),
+                         &rule.value
+                             .as_ref()
+                             .map_or("null".to_string(), |v| v.to_string()) // need to handle when value is meant to be null
+                             .italic());
+            }
         }
-        println!("\t{}", &rule.description);
-        println!("\t{} {} {}", &rule.jsonpath.italic(), &rule.operator.bright_white(),
-                 &rule.value
-                     .as_ref()
-                     .map_or("null".to_string(), |v| v.to_string()) // need to handle when value is meant to be null
-                     .italic());
-        }
+    }
 }
 
 fn colour_severity(severity: &k8s_rule::Severity) -> ColoredString {
