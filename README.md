@@ -8,11 +8,18 @@ Whilst some similar tools exist, they are usually working against the YAML confi
 way of doing things. However in situations where you do not have access to the YAML files, this tool may be of use. 
 
 ```aiignore
-kubectl analyze -r my-rules.json -n dev
+kubectl analyze -f my-rules.json -n dev
 kubectl analyze -n dev
+kubectl analyze -n dev -l critical
 ```
 
 A default set of rules is included in the kubectl-analyze-rules.json file. Although you can override this file with your own rules.
+
+* -f rules file: Specify the rules file to use
+* -n namespace: Specify the namespace to run the analysis against
+* -l level: Specify a level of severity to run the analysis against (i.e. critical, error, warning, information). If not specified, all levels are run. If information then information and all those to the left are shown (i.e. all). If you set the level to error then error and critical are shown.
+* -c category: Specify a category to run the analysis against (i.e. networking, security, etc.)
+* -r resource: Specify a resource type to run the analysis against (i.e. deployments, pods, etc.)
 
 ## Rules file
 
