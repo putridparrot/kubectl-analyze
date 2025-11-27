@@ -11,6 +11,7 @@ way of doing things. However in situations where you do not have access to the Y
 kubectl analyze -f my-rules.json -n dev
 kubectl analyze -n dev
 kubectl analyze -n dev -l critical
+kubectl analyze -u
 ```
 
 A default set of rules is included in the kubectl-analyze-rules.json file. Although you can override this file with your own rules.
@@ -20,6 +21,7 @@ A default set of rules is included in the kubectl-analyze-rules.json file. Altho
 * -l level: Specify a level of severity to run the analysis against (i.e. critical, error, warning, information). If not specified, all levels are run. If information then information and all those to the left are shown (i.e. all). If you set the level to error then error and critical are shown.
 * -c category: Specify a category to run the analysis against (i.e. networking, security, etc.)
 * -r resource: Specify a resource type to run the analysis against (i.e. deployments, pods, etc.)
+* -u Update rules file: Update the rules file with the latest rules from the github repo
 
 ## Rules file
 
