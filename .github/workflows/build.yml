@@ -43,15 +43,15 @@ jobs:
     #   if: matrix.target == 'x86_64-unknown-linux-gnu'
     #   run: cargo test --verbose
     
-    # - name: Prepare package
-    #   run: |
-    #     mkdir -p package
-    #     cp target/${{ matrix.target }}/release/kubectl-analyze* package/
-    #     cp rules.json package/
+    - name: Prepare package
+      run: |
+        mkdir -p package
+        cp target/${{ matrix.target }}/release/kubectl-analyze* package/
+        cp rules.json package/
 
-    # - name: Upload package
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: release-${{ matrix.target }}
-    #     path: package/
+    - name: Upload package
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-${{ matrix.target }}
+        path: package/
 
