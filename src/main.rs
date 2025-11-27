@@ -15,6 +15,7 @@ use k8s_openapi::api::policy::v1::PodDisruptionBudget;
 use k8s_openapi::api::scheduling::v1::PriorityClass;
 use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 use serde::Serialize;
+use crate::configuration::Configuration;
 use crate::k8s_rule::{Category, Resource, Severity};
 use crate::rules_updater::update_rules;
 
@@ -29,10 +30,11 @@ async fn main() -> anyhow::Result<()> {
     let cli = Args::parse();
 
     if cli.update {
-        update_rules();
+        update_rules().await?;
+        return Ok(());
     }
 
-    let fs: String = std::fs::read_to_string(cli.rules_file.unwrap_or("rules.json".to_string()))?;
+    let fs: String = std::fs::read_to_string(cli.rules_file.unwrap_or(Configuration::RULES_FILE.to_string()))?;
     let rules: Vec<K8sRule> = serde_json::from_str(fs.as_str())?;
 
     let namespace = cli.namespace.unwrap_or("default".to_string());

@@ -5,7 +5,7 @@ use serde_json::Value;
 use std::path::Path;
 use crate::configuration::Configuration;
 
-pub fn update_rules() -> anyhow::Result<()> {
+pub async fn update_rules() -> anyhow::Result<()> {
     // - Linux: ~/.config/kubectl-analyze/rules.json
     // - macOS: ~/Library/Application Support/kubectl-analyze/rules.json
     // - Windows: C:\Users\<User>\AppData\Roaming\kubectl-analyze\rules.json
@@ -18,12 +18,12 @@ pub fn update_rules() -> anyhow::Result<()> {
     let exe_dir = exe.parent().unwrap();
     let config_dir = exe_dir;
 
-    fs::create_dir_all(&config_dir)?;
+    //fs::create_dir_all(&config_dir)?;
     let rules_path = config_dir.join(Configuration::RULES_FILE);
     let backup_path = config_dir.join(format!("{}.bak", Configuration::RULES_FILE));
 
     let url = format!("https://raw.githubusercontent.com/putridparrot/kubectl-analyze/main/{}", Configuration::RULES_FILE);
-    let remote = reqwest::blocking::get(url)?.text()?;
+    let remote = fetch(url.as_str()).await?;
 
     if rules_path.exists() {
         fs::copy(&rules_path, &backup_path)?;
@@ -66,4 +66,11 @@ fn rollback(backup: &Path, target: &Path) -> anyhow::Result<()> {
         println!("No backup available, rules file left unchanged.");
     }
     Ok(())
+}
+
+use reqwest;
+
+async fn fetch(url: &str) -> Result<String, reqwest::Error> {
+    let remote = reqwest::get(url).await?.text().await?;
+    Ok(remote)
 }
