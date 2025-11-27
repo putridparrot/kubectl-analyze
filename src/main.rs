@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use clap::Parser;
 use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, StatefulSet};
 use kube::{api::Api, Client, ResourceExt};
@@ -17,15 +16,21 @@ use k8s_openapi::api::scheduling::v1::PriorityClass;
 use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 use serde::Serialize;
 use crate::k8s_rule::{Category, Resource, Severity};
-
+use crate::rules_updater::update_rules;
 
 mod k8s_rule;
 mod args;
+mod rules_updater;
+mod configuration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
 
     let cli = Args::parse();
+
+    if cli.update {
+        update_rules();
+    }
 
     let fs: String = std::fs::read_to_string(cli.rules_file.unwrap_or("rules.json".to_string()))?;
     let rules: Vec<K8sRule> = serde_json::from_str(fs.as_str())?;

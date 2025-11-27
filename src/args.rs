@@ -24,4 +24,8 @@ pub struct Args {
     /// The resource type to use, if not supplied all resources are used
     #[arg(short, long)]
     pub resource: Option<Resource>,
+
+    // Update the rules file from the source repo.
+    #[arg(short, long)]
+    pub update: bool,
 }
